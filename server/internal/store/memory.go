@@ -43,6 +43,21 @@ func (s *Store) GetAll() []*model.News {
 	return newsArr
 }
 
+// GetPopular returns popular news
+func (s *Store) GetPopular() []*model.News {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	var newsArr []*model.News
+	for _, news := range s.news {
+		if news.IsPopular {
+			newsArr = append(newsArr, news)
+		}
+	}
+
+	return newsArr
+}
+
 // Count returns total news
 func (s *Store) Count() int {
 	s.mu.RLock()
