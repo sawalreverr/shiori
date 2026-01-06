@@ -26,6 +26,18 @@ func (p *Parser) ExtractByRegex(html, pattern string) []string {
 	return results
 }
 
+// StripTags removes HTML tags from text
+func (p *Parser) StripTags(html string) string {
+	re := regexp.MustCompile(`<[^>]*>`)
+	text := re.ReplaceAllString(html, "")
+
+	text = strings.TrimSpace(text)
+	re = regexp.MustCompile(`\s+`)
+	text = re.ReplaceAllString(text, " ")
+
+	return text
+}
+
 // DecodeHTMLEntities converts &amp; to & etc
 func (p *Parser) DecodeHTMLEntities(text string) string {
 	replacements := map[string]string{
@@ -42,4 +54,19 @@ func (p *Parser) DecodeHTMLEntities(text string) string {
 	}
 
 	return text
+}
+
+// ExtractBetween returns string parsing
+func (p *Parser) ExtractBetween(s, start, end string) string {
+	i := strings.Index(s, start)
+	if i == -1 {
+		return ""
+	}
+	i += len(start)
+
+	j := strings.Index(s[i:], end)
+	if j == -1 {
+		return ""
+	}
+	return s[i : i+j]
 }

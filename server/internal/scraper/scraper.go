@@ -81,3 +81,37 @@ func (m *Manager) Register(s Scraper) {
 func (m *Manager) GetHTTPClient() *HTTPClient {
 	return m.client
 }
+
+// ScrapeAllLatest gets latest news from all scrapers
+func (m *Manager) ScrapeAllLatest(ctx context.Context) ([]*model.News, []error) {
+	var allNews []*model.News
+	var allErrors []error
+
+	for _, scraper := range m.scrapers {
+		news, err := scraper.ScrapeLatest(ctx)
+		if err != nil {
+			allErrors = append(allErrors, err)
+			continue
+		}
+		allNews = append(allNews, news...)
+	}
+
+	return allNews, allErrors
+}
+
+// ScrapeAllPopular gets popular news from all scrapers
+func (m *Manager) ScrapeAllPopular(ctx context.Context) ([]*model.News, []error) {
+	var allNews []*model.News
+	var allErrors []error
+
+	for _, scraper := range m.scrapers {
+		news, err := scraper.ScrapePopular(ctx)
+		if err != nil {
+			allErrors = append(allErrors, err)
+			continue
+		}
+		allNews = append(allNews, news...)
+	}
+
+	return allNews, allErrors
+}
