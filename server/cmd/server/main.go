@@ -2,12 +2,12 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
+	"shiori/internal/api"
 	"shiori/internal/config"
 	"shiori/internal/scraper"
 	"shiori/internal/store"
@@ -37,39 +37,14 @@ func main() {
 	}()
 
 	// setup HTTP routes
-	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{
-			"status": "ok",
-			"time":   time.Now().Format(time.RFC3339),
-		})
-	})
-
-	http.HandleFunc("/api/news", func(w http.ResponseWriter, r *http.Request) {
-		news := newsStore.GetAll()
-
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"status": "success",
-			"items":  news,
-			"count":  len(news),
-		})
-	})
-
-	http.HandleFunc("/api/news/popular", func(w http.ResponseWriter, r *http.Request) {
-		news := newsStore.GetPopular()
-
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"status": "success",
-			"items":  news,
-			"count":  len(news),
-		})
-	})
+	mux := http.NewServeMux()
+	handler := api.NewHandler(newsStore)
+	handler.RegisterRoutes(mux)
 
 	// start server
 	server := &http.Server{
-		Addr: fmt.Sprintf(":%d", cfg.Port),
+		Addr:    fmt.Sprintf(":%d", cfg.Port),
+		Handler: mux,
 	}
 
 	go func() {
