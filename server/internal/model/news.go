@@ -16,7 +16,6 @@ type News struct {
 	Author      string    `json:"author,omitempty"`
 	PublishedAt time.Time `json:"published_at"`
 	ScrapedAt   time.Time `json:"scraped_at"`
-	IsPopular   bool      `json:"is_popular"`
 }
 
 func (a *News) GenerateID() {

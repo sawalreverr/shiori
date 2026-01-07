@@ -19,7 +19,8 @@ func main() {
 	cfg := config.DefaultConfig()
 
 	// create store
-	newsStore := store.NewStore()
+	latestStore := store.NewStore()
+	popularStore := store.NewStore()
 
 	// create scraper
 	manager := scraper.NewManager(cfg)
@@ -29,18 +30,18 @@ func main() {
 	manager.Register(scraper.NewDetikScraper(client))
 
 	go func() {
-		scrapeNews(manager, newsStore)
+		scrapeNews(manager, latestStore, popularStore)
 
 		// then scrape every interval
 		ticker := time.NewTicker(cfg.ScraperInterval)
 		for range ticker.C {
-			scrapeNews(manager, newsStore)
+			scrapeNews(manager, latestStore, popularStore)
 		}
 	}()
 
 	// setup HTTP routes
 	mux := http.NewServeMux()
-	handler := api.NewHandler(newsStore)
+	handler := api.NewHandler(latestStore, popularStore)
 	handler.RegisterRoutes(mux)
 
 	// start server
@@ -67,7 +68,7 @@ func main() {
 	server.Shutdown(ctx)
 }
 
-func scrapeNews(manager *scraper.Manager, newsStore *store.Store) {
+func scrapeNews(manager *scraper.Manager, latestStore, popularStore *store.Store) {
 	ctx := context.Background()
 
 	// Scrape latest
@@ -77,10 +78,10 @@ func scrapeNews(manager *scraper.Manager, newsStore *store.Store) {
 	}
 
 	// Save news
-	newCount := 0
+	latestCount := 0
 	for _, news := range newsArr {
-		if newsStore.Save(news) {
-			newCount++
+		if latestStore.Save(news) {
+			latestCount++
 		}
 	}
 
@@ -90,11 +91,12 @@ func scrapeNews(manager *scraper.Manager, newsStore *store.Store) {
 		log.Printf("Error: %v", err)
 	}
 
+	popularCount := 0
 	for _, news := range popular {
-		if newsStore.Save(news) {
-			newCount++
+		if popularStore.Save(news) {
+			popularCount++
 		}
 	}
 
-	log.Printf("Scrape done: %d news, %d total", newCount, newsStore.Count())
+	log.Printf("Scrape done: %d latest, %d popular", latestCount, popularCount)
 }

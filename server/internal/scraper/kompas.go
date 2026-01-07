@@ -35,7 +35,7 @@ func (s *KompasScraper) ScrapeLatest(ctx context.Context) ([]*model.News, error)
 		return nil, fmt.Errorf("fetch kompas: %w", err)
 	}
 
-	return s.parseNews(string(body), false)
+	return s.parseNews(string(body))
 }
 
 // ScrapePopular gets popular news from source
@@ -47,11 +47,11 @@ func (s *KompasScraper) ScrapePopular(ctx context.Context) ([]*model.News, error
 		return nil, fmt.Errorf("fetch kompas: %w", err)
 	}
 
-	return s.parseNews(string(body), true)
+	return s.parseNews(string(body))
 }
 
 // parseNews extracts news from HTML
-func (s *KompasScraper) parseNews(html string, isPopular bool) ([]*model.News, error) {
+func (s *KompasScraper) parseNews(html string) ([]*model.News, error) {
 	var newsArr []*model.News
 
 	pattern := `<a[^>]+href="https://[a-z]+\.kompas\.com/read/[^"]+"[\s\S]*?</a>`
@@ -84,7 +84,6 @@ func (s *KompasScraper) parseNews(html string, isPopular bool) ([]*model.News, e
 			URL:         url,
 			Source:      s.Name(),
 			Category:    category,
-			IsPopular:   isPopular,
 			PublishedAt: time.Now(),
 			ScrapedAt:   time.Now(),
 		}

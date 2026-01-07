@@ -5,16 +5,27 @@ import (
 	"sync"
 )
 
+const (
+	MaxNewsPerSource = 100
+	DefaultLimit     = 20
+)
+
 type Store struct {
-	news map[string]*model.News
-	mu   sync.RWMutex
+	bySource map[string][]*model.News // source -> all articles
+	count    int
+	mu       sync.RWMutex
 }
 
 // NewStore creates a new store
 func NewStore() *Store {
 	return &Store{
-		news: make(map[string]*model.News),
+		bySource: make(map[string][]*model.News),
 	}
+}
+
+type SourceGroup struct {
+	Source string        `json:"id"`
+	News   []*model.News `json:"news"`
 }
 
 // Save stores a news, returns true if new
@@ -22,45 +33,52 @@ func (s *Store) Save(news *model.News) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if _, exists := s.news[news.ID]; exists {
-		return false
-	}
+	source := news.Source
 
-	s.news[news.ID] = news
-	return true
-}
-
-// GetAll returns all news
-func (s *Store) GetAll() []*model.News {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
-	newsArr := make([]*model.News, 0, len(s.news))
-	for _, news := range s.news {
-		newsArr = append(newsArr, news)
-	}
-
-	return newsArr
-}
-
-// GetPopular returns popular news
-func (s *Store) GetPopular() []*model.News {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
-	var newsArr []*model.News
-	for _, news := range s.news {
-		if news.IsPopular {
-			newsArr = append(newsArr, news)
+	// check duplicate
+	for _, existing := range s.bySource[source] {
+		if existing.ID == news.ID {
+			return false
 		}
 	}
 
-	return newsArr
+	// add to source list
+	s.bySource[source] = append([]*model.News{news}, s.bySource[source]...)
+	s.count++
+
+	// trim if too many
+	if len(s.bySource[source]) > MaxNewsPerSource {
+		s.bySource[source] = s.bySource[source][:MaxNewsPerSource]
+		s.count--
+	}
+
+	return true
+}
+
+// GetGrouped returns news grouped by source with limit
+func (s *Store) GetGrouped(limit int) []SourceGroup {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	if limit <= 0 {
+		limit = DefaultLimit
+	}
+
+	groups := make([]SourceGroup, 0, len(s.bySource))
+	for source, news := range s.bySource {
+		count := len(news)
+		if count > limit {
+			news = news[:limit]
+		}
+		groups = append(groups, SourceGroup{source, news})
+	}
+
+	return groups
 }
 
 // Count returns total news
 func (s *Store) Count() int {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	return len(s.news)
+	return s.count
 }

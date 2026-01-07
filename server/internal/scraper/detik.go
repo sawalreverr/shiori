@@ -35,7 +35,7 @@ func (s *DetikScraper) ScrapeLatest(ctx context.Context) ([]*model.News, error) 
 		return nil, fmt.Errorf("fetch detik: %w", err)
 	}
 
-	return s.parseNews(string(body), false)
+	return s.parseNews(string(body))
 }
 
 // ScrapePopular gets latest news from source
@@ -47,11 +47,11 @@ func (s *DetikScraper) ScrapePopular(ctx context.Context) ([]*model.News, error)
 		return nil, fmt.Errorf("fetch detik: %w", err)
 	}
 
-	return s.parseNews(string(body), true)
+	return s.parseNews(string(body))
 }
 
 // parseNews extracts news from HTML
-func (s *DetikScraper) parseNews(html string, isPopular bool) ([]*model.News, error) {
+func (s *DetikScraper) parseNews(html string) ([]*model.News, error) {
 	var newsArr []*model.News
 
 	pattern := `<div class="media__text">[\s\S]*?</div>`
@@ -82,7 +82,6 @@ func (s *DetikScraper) parseNews(html string, isPopular bool) ([]*model.News, er
 			URL:         url,
 			Source:      s.Name(),
 			Category:    "News",
-			IsPopular:   isPopular,
 			PublishedAt: published,
 			ScrapedAt:   time.Now(),
 		}
