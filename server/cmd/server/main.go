@@ -23,8 +23,10 @@ func main() {
 
 	// create scraper
 	manager := scraper.NewManager(cfg)
-	kompasScraper := scraper.NewKompasScraper(manager.GetHTTPClient())
-	manager.Register(kompasScraper)
+	client := manager.GetHTTPClient()
+
+	manager.Register(scraper.NewKompasScraper(client))
+	manager.Register(scraper.NewDetikScraper(client))
 
 	go func() {
 		scrapeNews(manager, newsStore)
