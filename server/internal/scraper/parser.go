@@ -11,21 +11,6 @@ func NewParser() *Parser {
 	return &Parser{}
 }
 
-// ExtractByRegex finds all matches for a pattern
-func (p *Parser) ExtractByRegex(html, pattern string) []string {
-	re := regexp.MustCompile(pattern)
-	matches := re.FindAllStringSubmatch(html, -1)
-
-	results := make([]string, 0)
-	for _, match := range matches {
-		if len(match) > 1 {
-			results = append(results, match[1])
-		}
-	}
-
-	return results
-}
-
 // StripTags removes HTML tags from text
 func (p *Parser) StripTags(html string) string {
 	re := regexp.MustCompile(`<[^>]*>`)
