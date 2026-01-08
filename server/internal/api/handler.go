@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"net/http"
+	"shiori/internal/model"
 	"shiori/internal/store"
 	"strconv"
 	"time"
@@ -35,26 +36,43 @@ func (h *Handler) Health(w http.ResponseWriter, r *http.Request) {
 
 // GetNews returns news grouped by source
 func (h *Handler) GetNews(w http.ResponseWriter, r *http.Request) {
-	limit := parseLimit(r.URL.Query().Get("limit"))
-	news := h.latestStore.GetGrouped(limit)
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]any{
-		"status": "success",
-		"items":  news,
-	})
+	h.writeGrouped(w, r, h.latestStore)
 }
 
 // GetPopular returns popular news grouped by source
 func (h *Handler) GetPopular(w http.ResponseWriter, r *http.Request) {
+	h.writeGrouped(w, r, h.popularStore)
+}
+
+func (h *Handler) writeGrouped(w http.ResponseWriter, r *http.Request, s *store.Store) {
 	limit := parseLimit(r.URL.Query().Get("limit"))
-	news := h.popularStore.GetGrouped(limit)
+	resp := mapGroups(s.GetGrouped(limit))
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]any{
 		"status": "success",
-		"items":  news,
+		"items":  resp,
 	})
+}
+
+func mapGroups(groups []store.SourceGroup) []model.SourceGroupResponse {
+	out := make([]model.SourceGroupResponse, 0, len(groups))
+
+	for _, g := range groups {
+		respNews := make([]model.NewsResponse, 0, len(g.News))
+		for _, n := range g.News {
+			respNews = append(respNews, model.NewsResponse{
+				Title:       n.Title,
+				URL:         n.URL,
+				Category:    n.Category,
+				PublishedAt: n.PublishedAt,
+			})
+		}
+
+		out = append(out, model.SourceGroupResponse{Source: g.Source, News: respNews})
+	}
+
+	return out
 }
 
 func parseLimit(s string) int {

@@ -24,8 +24,8 @@ func NewStore() *Store {
 }
 
 type SourceGroup struct {
-	Source string        `json:"id"`
-	News   []*model.News `json:"news"`
+	Source string
+	News   []*model.News
 }
 
 // Save stores a news, returns true if new

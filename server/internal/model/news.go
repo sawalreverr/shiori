@@ -7,15 +7,27 @@ import (
 )
 
 type News struct {
-	ID          string    `json:"id"`
+	ID          string
+	Title       string
+	URL         string
+	ImageURL    string
+	Source      string
+	Category    string
+	Author      string
+	PublishedAt time.Time
+	ScrapedAt   time.Time
+}
+
+type NewsResponse struct {
 	Title       string    `json:"title"`
 	URL         string    `json:"url"`
-	ImageURL    string    `json:"image_url,omitempty"`
-	Source      string    `json:"source"`
-	Category    string    `json:"category,omitempty"`
-	Author      string    `json:"author,omitempty"`
+	Category    string    `json:"category"`
 	PublishedAt time.Time `json:"published_at"`
-	ScrapedAt   time.Time `json:"scraped_at"`
+}
+
+type SourceGroupResponse struct {
+	Source string         `json:"id"`
+	News   []NewsResponse `json:"news"`
 }
 
 func (a *News) GenerateID() {
