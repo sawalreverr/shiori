@@ -2,6 +2,7 @@ package store
 
 import (
 	"shiori/internal/model"
+	"sort"
 	"sync"
 )
 
@@ -46,7 +47,12 @@ func (s *Store) Save(news *model.News) bool {
 	s.bySource[source] = append([]*model.News{news}, s.bySource[source]...)
 	s.count++
 
-	// trim if too many
+	// sort by published_at (newest first)
+	sort.Slice(s.bySource[source], func(i, j int) bool {
+		return s.bySource[source][i].PublishedAt.After(s.bySource[source][j].PublishedAt)
+	})
+
+	// trim if too many (remove oldest)
 	if len(s.bySource[source]) > MaxNewsPerSource {
 		s.bySource[source] = s.bySource[source][:MaxNewsPerSource]
 		s.count--
