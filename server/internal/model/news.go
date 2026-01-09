@@ -22,7 +22,7 @@ type NewsResponse struct {
 	Title       string    `json:"title"`
 	URL         string    `json:"url"`
 	Category    string    `json:"category"`
-	PublishedAt time.Time `json:"published_at"`
+	PublishedAt time.Time `json:"published_at,omitzero"`
 }
 
 type SourceGroupResponse struct {

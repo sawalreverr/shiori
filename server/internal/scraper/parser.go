@@ -2,7 +2,9 @@ package scraper
 
 import (
 	"regexp"
+	"strconv"
 	"strings"
+	"time"
 )
 
 type Parser struct{}
@@ -26,7 +28,7 @@ func (p *Parser) StripTags(html string) string {
 // DecodeHTMLEntities converts &amp; to & etc
 func (p *Parser) DecodeHTMLEntities(text string) string {
 	replacements := map[string]string{
-		"&nbsp;": " ",
+		"&nbsp;": "",
 		"&amp;":  "&",
 		"&lt;":   "<",
 		"&gt;":   ">",
@@ -54,4 +56,35 @@ func (p *Parser) ExtractBetween(s, start, end string) string {
 		return ""
 	}
 	return s[i : i+j]
+}
+
+// ParseTime returns time formatting in bahasa
+func (p *Parser) ParseTime(s string) time.Time {
+	now := time.Now()
+	s = p.DecodeHTMLEntities(s)
+	s = strings.ToLower(s)
+
+	parts := strings.Split(s, " ")
+	if len(parts) < 2 {
+		return time.Time{}
+	}
+
+	value, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return time.Time{}
+	}
+
+	unit := parts[1]
+	switch {
+	case strings.Contains(unit, "menit"):
+		return now.Add(-time.Duration(value) * time.Minute)
+	case strings.Contains(unit, "jam"):
+		return now.Add(-time.Duration(value) * time.Hour)
+	case strings.Contains(unit, "hari"):
+		return now.AddDate(0, 0, -value)
+	case strings.Contains(unit, "minggu"):
+		return now.AddDate(0, 0, -7*value)
+	default:
+		return time.Time{}
+	}
 }
