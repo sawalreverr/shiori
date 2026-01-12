@@ -29,6 +29,7 @@ func main() {
 	manager.Register(scraper.NewKompasScraper(client))
 	manager.Register(scraper.NewDetikScraper(client))
 	manager.Register(scraper.NewBloomberTechnozScraper(client))
+	manager.Register(scraper.NewLiputan6Scraper(client))
 
 	go func() {
 		scrapeNews(manager, latestStore, popularStore)
