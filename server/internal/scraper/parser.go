@@ -88,3 +88,29 @@ func (p *Parser) ParseTime(s string) time.Time {
 		return time.Time{}
 	}
 }
+
+// ParseTimeFormat returns time formatting with spesific format
+func (p *Parser) ParseTimeFormat(s string, f string) (time.Time, error) {
+	var monthMap = map[string]string{
+		"Januari":   "January",
+		"Februari":  "February",
+		"Maret":     "March",
+		"April":     "April",
+		"Mei":       "May",
+		"Juni":      "June",
+		"Juli":      "July",
+		"Agustus":   "August",
+		"September": "September",
+		"Oktober":   "October",
+		"November":  "November",
+		"Desember":  "December",
+	}
+
+	formatted := strings.SplitN(s, ", ", 2)[1]
+	formatted = strings.Replace(formatted, "WIB", "+0700", 1)
+	for id, en := range monthMap {
+		formatted = strings.Replace(formatted, id, en, 1)
+	}
+
+	return time.Parse(f, formatted)
+}
