@@ -7,20 +7,38 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"time"
+
 	"shiori/internal/api"
 	"shiori/internal/config"
 	"shiori/internal/scraper"
 	"shiori/internal/store"
-	"time"
 )
 
 func main() {
 	// load config
 	cfg := config.DefaultConfig()
 
-	// create store
-	latestStore := store.NewStore()
-	popularStore := store.NewStore()
+	// Initialize SQLite database
+	db, err := store.OpenDB(cfg.DatabasePath)
+	if err != nil {
+		log.Fatalf("Failed to open database: %v", err)
+	}
+	defer db.Close()
+
+	log.Printf("Database initialized at %s", cfg.DatabasePath)
+
+	// create stores with DB backing
+	latestStore := store.NewStoreWithDB(db, store.FeedTypeLatest)
+	popularStore := store.NewStoreWithDB(db, store.FeedTypePopular)
+
+	// Load existing data from DB into cache
+	if err := latestStore.LoadFromDB(); err != nil {
+		log.Printf("Warning: failed to load latest from DB: %v", err)
+	}
+	if err := popularStore.LoadFromDB(); err != nil {
+		log.Printf("Warning: failed to load popular from DB: %v", err)
+	}
 
 	// create scraper
 	manager := scraper.NewManager(cfg)
