@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"shiori/internal/config"
 	"shiori/internal/model"
+	"sync"
 	"time"
 )
 
@@ -84,34 +85,68 @@ func (m *Manager) GetHTTPClient() *HTTPClient {
 
 // ScrapeAllLatest gets latest news from all scrapers
 func (m *Manager) ScrapeAllLatest(ctx context.Context) ([]*model.News, []error) {
-	var allNews []*model.News
-	var allErrors []error
+	var (
+		allNews   []*model.News
+		allErrors []error
+		mu        sync.Mutex
+		wg        sync.WaitGroup
+	)
 
-	for _, scraper := range m.scrapers {
-		news, err := scraper.ScrapeLatest(ctx)
-		if err != nil {
-			allErrors = append(allErrors, err)
-			continue
-		}
-		allNews = append(allNews, news...)
+	for _, s := range m.scrapers {
+		wg.Add(1)
+		go func(scraper Scraper) {
+			defer wg.Done()
+
+			scrapeCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+			defer cancel()
+
+			news, err := scraper.ScrapeLatest(scrapeCtx)
+
+			mu.Lock()
+			defer mu.Unlock()
+
+			if err != nil {
+				allErrors = append(allErrors, fmt.Errorf("%s: %w", scraper.Name(), err))
+			} else {
+				allNews = append(allNews, news...)
+			}
+		}(s)
 	}
 
+	wg.Wait()
 	return allNews, allErrors
 }
 
 // ScrapeAllPopular gets popular news from all scrapers
 func (m *Manager) ScrapeAllPopular(ctx context.Context) ([]*model.News, []error) {
-	var allNews []*model.News
-	var allErrors []error
+	var (
+		allNews   []*model.News
+		allErrors []error
+		mu        sync.Mutex
+		wg        sync.WaitGroup
+	)
 
-	for _, scraper := range m.scrapers {
-		news, err := scraper.ScrapePopular(ctx)
-		if err != nil {
-			allErrors = append(allErrors, err)
-			continue
-		}
-		allNews = append(allNews, news...)
+	for _, s := range m.scrapers {
+		wg.Add(1)
+		go func(scraper Scraper) {
+			defer wg.Done()
+
+			scrapeCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+			defer cancel()
+
+			news, err := scraper.ScrapePopular(scrapeCtx)
+
+			mu.Lock()
+			defer mu.Unlock()
+
+			if err != nil {
+				allErrors = append(allErrors, fmt.Errorf("%s: %w", scraper.Name(), err))
+			} else {
+				allNews = append(allNews, news...)
+			}
+		}(s)
 	}
 
+	wg.Wait()
 	return allNews, allErrors
 }
