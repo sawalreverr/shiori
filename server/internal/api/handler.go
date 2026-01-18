@@ -36,11 +36,13 @@ func (h *Handler) Health(w http.ResponseWriter, r *http.Request) {
 
 // GetNews returns news grouped by source
 func (h *Handler) GetNews(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Cache-Control", "public, max-age=60")
 	h.writeGrouped(w, r, h.latestStore)
 }
 
 // GetPopular returns popular news grouped by source
 func (h *Handler) GetPopular(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Cache-Control", "public, max-age=60")
 	h.writeGrouped(w, r, h.popularStore)
 }
 
