@@ -1,6 +1,8 @@
 package store
 
 import (
+	"database/sql"
+	"log"
 	"shiori/internal/model"
 	"sort"
 	"sync"
@@ -15,18 +17,53 @@ type Store struct {
 	bySource map[string][]*model.News // source -> all articles
 	count    int
 	mu       sync.RWMutex
+	db       *sql.DB
+	feedType string // "latest" or "popular"
 }
 
-// NewStore creates a new store
+// NewStore creates a new store (in-memory only, for backward compatibility)
 func NewStore() *Store {
 	return &Store{
 		bySource: make(map[string][]*model.News),
 	}
 }
 
+// NewStoreWithDB creates a store backed by SQLite
+func NewStoreWithDB(db *sql.DB, feedType string) *Store {
+	return &Store{
+		bySource: make(map[string][]*model.News),
+		db:       db,
+		feedType: feedType,
+	}
+}
+
 type SourceGroup struct {
 	Source string
 	News   []*model.News
+}
+
+// LoadFromDB populates the in-memory cache from SQLite
+func (s *Store) LoadFromDB() error {
+	if s.db == nil {
+		return nil // No DB configured, skip
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	data, err := LoadNewsByFeedType(s.db, s.feedType, MaxNewsPerSource)
+	if err != nil {
+		return err
+	}
+
+	s.bySource = data
+	s.count = 0
+	for _, news := range data {
+		s.count += len(news)
+	}
+
+	log.Printf("Loaded %d news items for %s feed from database", s.count, s.feedType)
+	return nil
 }
 
 // Save stores a news, returns true if new
@@ -40,6 +77,14 @@ func (s *Store) Save(news *model.News) bool {
 	for _, existing := range s.bySource[source] {
 		if existing.ID == news.ID {
 			return false
+		}
+	}
+
+	// Persist to database first (if configured)
+	if s.db != nil {
+		if err := SaveNews(s.db, news, s.feedType); err != nil {
+			log.Printf("Failed to save to database: %v", err)
+			// Continue anyway to keep in-memory working
 		}
 	}
 

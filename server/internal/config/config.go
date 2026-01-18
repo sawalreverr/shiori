@@ -1,10 +1,16 @@
 package config
 
-import "time"
+import (
+	"os"
+	"time"
+)
 
 type Config struct {
 	// Server settings
 	Port int
+
+	// Database settings
+	DatabasePath string
 
 	// Scraper settings
 	ScraperInterval time.Duration
@@ -13,10 +19,16 @@ type Config struct {
 	UserAgent       string
 }
 
-// default settings
+// DefaultConfig returns default settings, with optional env overrides
 func DefaultConfig() *Config {
+	dbPath := os.Getenv("DATABASE_PATH")
+	if dbPath == "" {
+		dbPath = "./data/shiori.db"
+	}
+
 	return &Config{
 		Port:            8080,
+		DatabasePath:    dbPath,
 		ScraperInterval: 5 * time.Minute,
 		Timeout:         30 * time.Second,
 		Delay:           2 * time.Second,

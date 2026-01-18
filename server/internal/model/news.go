@@ -10,10 +10,8 @@ type News struct {
 	ID          string
 	Title       string
 	URL         string
-	ImageURL    string
 	Source      string
 	Category    string
-	Author      string
 	PublishedAt time.Time
 	ScrapedAt   time.Time
 }
