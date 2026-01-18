@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"syscall"
 	"time"
 
 	"shiori/internal/api"
@@ -69,7 +70,7 @@ func main() {
 	// start server
 	server := &http.Server{
 		Addr:    fmt.Sprintf(":%d", cfg.Port),
-		Handler: mux,
+		Handler: api.CORSMiddleware(mux),
 	}
 
 	go func() {
@@ -81,7 +82,7 @@ func main() {
 
 	// ctrl+c
 	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, os.Interrupt)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
 	<-quit
 
 	log.Println("Shutting down...")
