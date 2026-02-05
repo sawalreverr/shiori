@@ -17,10 +17,8 @@ import (
 )
 
 func main() {
-	// load config
 	cfg := config.DefaultConfig()
 
-	// Initialize SQLite database
 	db, err := store.OpenDB(cfg.DatabasePath)
 	if err != nil {
 		log.Fatalf("Failed to open database: %v", err)
@@ -46,7 +44,7 @@ func main() {
 	go func() {
 		scrapeNews(manager, newsStore)
 
-		ticker := time.NewTicker(cfg.ScraperInterval)
+		ticker := time.NewTicker(getPollingInterval())
 		for range ticker.C {
 			scrapeNews(manager, newsStore)
 		}
@@ -56,7 +54,6 @@ func main() {
 	handler := api.NewHandler(newsStore)
 	handler.RegisterRoutes(mux)
 
-	// start server
 	server := &http.Server{
 		Addr:    fmt.Sprintf(":%d", cfg.Port),
 		Handler: api.CORSMiddleware(mux),
@@ -69,7 +66,6 @@ func main() {
 		}
 	}()
 
-	// ctrl+c
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
 	<-quit
@@ -78,6 +74,21 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	server.Shutdown(ctx)
+}
+
+func isMarketHours() bool {
+	jakarta, _ := time.LoadLocation("Asia/Jakarta")
+	now := time.Now().In(jakarta)
+	hour := now.Hour()
+
+	return hour >= 9 && hour < 18
+}
+
+func getPollingInterval() time.Duration {
+	if isMarketHours() {
+		return 5 * time.Minute
+	}
+	return 60 * time.Minute
 }
 
 func scrapeNews(manager *scraper.Manager, newsStore *store.Store) {
