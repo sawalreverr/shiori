@@ -11,31 +11,24 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-const (
-	FeedTypeLatest  = "latest"
-	FeedTypePopular = "popular"
-)
-
 const schema = `
 CREATE TABLE IF NOT EXISTS news (
     id TEXT NOT NULL,
     title TEXT NOT NULL,
     url TEXT NOT NULL,
+    image_url TEXT,
     source TEXT NOT NULL,
-    category TEXT,
     published_at DATETIME,
-    scraped_at DATETIME NOT NULL,
-    feed_type TEXT NOT NULL,
-    PRIMARY KEY (url, feed_type)
+    created_at DATETIME NOT NULL,
+    PRIMARY KEY (url)
 );
 
-CREATE INDEX IF NOT EXISTS idx_news_source_type ON news(source, feed_type);
+CREATE INDEX IF NOT EXISTS idx_news_source ON news(source);
 CREATE INDEX IF NOT EXISTS idx_news_published ON news(published_at DESC);
 `
 
 // OpenDB opens a SQLite database connection and initializes the schema
 func OpenDB(path string) (*sql.DB, error) {
-	// Ensure directory exists
 	dir := filepath.Dir(path)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return nil, fmt.Errorf("create data directory: %w", err)
@@ -46,13 +39,11 @@ func OpenDB(path string) (*sql.DB, error) {
 		return nil, fmt.Errorf("open database: %w", err)
 	}
 
-	// Enable WAL mode for better concurrent read performance
 	if _, err := db.Exec("PRAGMA journal_mode=WAL"); err != nil {
 		db.Close()
 		return nil, fmt.Errorf("set WAL mode: %w", err)
 	}
 
-	// Initialize schema
 	if _, err := db.Exec(schema); err != nil {
 		db.Close()
 		return nil, fmt.Errorf("create schema: %w", err)
@@ -61,27 +52,26 @@ func OpenDB(path string) (*sql.DB, error) {
 	return db, nil
 }
 
-// SaveNews inserts or updates a news item in the database
-func SaveNews(db *sql.DB, news *model.News, feedType string) error {
+// SaveNews inserts or updates a news item in database
+func SaveNews(db *sql.DB, news *model.News) error {
 	query := `
-		INSERT INTO news (id, title, url, source, category, published_at, scraped_at, feed_type)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-		ON CONFLICT(url, feed_type) DO UPDATE SET
+		INSERT INTO news (id, title, url, image_url, source, published_at, created_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
+		ON CONFLICT(url) DO UPDATE SET
 			title = excluded.title,
-			category = excluded.category,
+			image_url = excluded.image_url,
 			published_at = excluded.published_at,
-			scraped_at = excluded.scraped_at
+			created_at = excluded.created_at
 	`
 
 	_, err := db.Exec(query,
 		news.ID,
 		news.Title,
 		news.URL,
+		news.ImageURL,
 		news.Source,
-		news.Category,
 		news.PublishedAt,
-		news.ScrapedAt,
-		feedType,
+		news.CreatedAt,
 	)
 	if err != nil {
 		return fmt.Errorf("save news: %w", err)
@@ -90,24 +80,21 @@ func SaveNews(db *sql.DB, news *model.News, feedType string) error {
 	return nil
 }
 
-// LoadNewsByFeedType loads news grouped by source for a specific feed type
-func LoadNewsByFeedType(db *sql.DB, feedType string, limitPerSource int) (map[string][]*model.News, error) {
-	// Using a window function to get top N per source
+func LoadNews(db *sql.DB, limitPerSource int) (map[string][]*model.News, error) {
 	query := `
 		WITH ranked AS (
-			SELECT 
-				id, title, url, source, category, published_at, scraped_at,
+			SELECT
+				id, title, url, image_url, source, published_at, created_at,
 				ROW_NUMBER() OVER (PARTITION BY source ORDER BY published_at DESC) as rn
 			FROM news
-			WHERE feed_type = ?
 		)
-		SELECT id, title, url, source, category, published_at, scraped_at
+		SELECT id, title, url, image_url, source, published_at, created_at
 		FROM ranked
 		WHERE rn <= ?
 		ORDER BY source, published_at DESC
 	`
 
-	rows, err := db.Query(query, feedType, limitPerSource)
+	rows, err := db.Query(query, limitPerSource)
 	if err != nil {
 		return nil, fmt.Errorf("query news: %w", err)
 	}
@@ -118,15 +105,17 @@ func LoadNewsByFeedType(db *sql.DB, feedType string, limitPerSource int) (map[st
 	for rows.Next() {
 		var news model.News
 		var publishedAt sql.NullTime
+		var imageURL sql.NullString
+		var createdAt sql.NullTime
 
 		err := rows.Scan(
 			&news.ID,
 			&news.Title,
 			&news.URL,
+			&imageURL,
 			&news.Source,
-			&news.Category,
 			&publishedAt,
-			&news.ScrapedAt,
+			&createdAt,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("scan row: %w", err)
@@ -134,6 +123,14 @@ func LoadNewsByFeedType(db *sql.DB, feedType string, limitPerSource int) (map[st
 
 		if publishedAt.Valid {
 			news.PublishedAt = publishedAt.Time
+		}
+
+		if imageURL.Valid {
+			news.ImageURL = imageURL.String
+		}
+
+		if createdAt.Valid {
+			news.CreatedAt = createdAt.Time
 		}
 
 		result[news.Source] = append(result[news.Source], &news)
@@ -150,7 +147,7 @@ func LoadNewsByFeedType(db *sql.DB, feedType string, limitPerSource int) (map[st
 func CleanupOldNews(db *sql.DB, maxAge time.Duration) (int64, error) {
 	cutoff := time.Now().Add(-maxAge)
 
-	result, err := db.Exec("DELETE FROM news WHERE scraped_at < ?", cutoff)
+	result, err := db.Exec("DELETE FROM news WHERE created_at < ?", cutoff)
 	if err != nil {
 		return 0, fmt.Errorf("cleanup old news: %w", err)
 	}

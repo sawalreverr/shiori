@@ -1,6 +1,6 @@
 ---
-import type { SourceGroup } from '../types';
-import NewsListItem from './NewsListItem.astro';
+import type { SourceGroup } from "../types";
+import NewsListItem from "./NewsListItem.astro";
 
 interface Props {
   group: SourceGroup;
@@ -10,43 +10,48 @@ const { group } = Astro.props;
 
 // Map IDs to display names and icons
 const sourceMap: Record<string, { name: string; icon: string }> = {
-  detik: { name: 'Detik', icon: '/icons/detik.png' },
-  kompas: { name: 'Kompas', icon: '/icons/kompas.png' },
-  tribunnews: { name: 'Tribunnews', icon: '/icons/tribunnews.png' },
-  cnnindonesia: { name: 'CNN Indonesia', icon: '/icons/cnnindonesia.png' },
-  liputan6: { name: 'Liputan6', icon: '/icons/liputan6.png' },
-  bloombergtechnoz: { name: 'BloombergTechnoz', icon: '/icons/bloombergtechnoz.png' },
+  detik: { name: "Detik", icon: "/icons/detik.png" },
+  kompas: { name: "Kompas", icon: "/icons/kompas.png" },
+  tribunnews: { name: "Tribunnews", icon: "/icons/tribunnews.png" },
+  cnnindonesia: { name: "CNN Indonesia", icon: "/icons/cnnindonesia.png" },
+  liputan6: { name: "Liputan6", icon: "/icons/liputan6.png" },
+  bloombergtechnoz: {
+    name: "BloombergTechnoz",
+    icon: "/icons/bloombergtechnoz.png",
+  },
 };
 
-const normalizedId = group.id.toLowerCase().replace(/[^a-z0-9]/g, '');
+const normalizedId = group.id.toLowerCase().replace(/[^a-z0-9]/g, "");
 let sourceConfig = sourceMap[normalizedId];
 
 if (!sourceConfig) {
-    const foundKey = Object.keys(sourceMap).find(key => normalizedId.includes(key));
-    if (foundKey) {
-        sourceConfig = sourceMap[foundKey];
-    } else {
-         sourceConfig = { name: group.id.toUpperCase(), icon: '' };
-    }
+  const foundKey = Object.keys(sourceMap).find((key) =>
+    normalizedId.includes(key),
+  );
+  if (foundKey) {
+    sourceConfig = sourceMap[foundKey];
+  } else {
+    sourceConfig = { name: group.id.toUpperCase(), icon: "" };
+  }
 }
 
 // Calculate relative time from latest news
 const getRelativeTime = (dateStr?: string) => {
-    if (!dateStr) return '';
-    const now = new Date();
-    const date = new Date(dateStr);
-    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-    const diffInMinutes = Math.floor(diffInSeconds / 60);
-    const diffInHours = Math.floor(diffInMinutes / 60);
+  if (!dateStr) return "";
+  const now = new Date();
+  const date = new Date(dateStr);
+  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+  const diffInMinutes = Math.floor(diffInSeconds / 60);
+  const diffInHours = Math.floor(diffInMinutes / 60);
 
-    if (diffInMinutes < 1) return 'updated just now';
-    if (diffInMinutes < 60) return `updated ${diffInMinutes} minutes ago`;
-    if (diffInHours < 24) return `updated ${diffInHours} hours ago`;
-    return `updated on ${date.toLocaleDateString()}`;
+  if (diffInMinutes < 1) return "updated just now";
+  if (diffInMinutes < 60) return `updated ${diffInMinutes} minutes ago`;
+  if (diffInHours < 24) return `updated ${diffInHours} hours ago`;
+  return `updated on ${date.toLocaleDateString()}`;
 };
 
 const latestNews = group.news[0];
-const updatedTime = latestNews ? getRelativeTime(latestNews.published_at) : '';
+const updatedTime = latestNews ? getRelativeTime(latestNews.published_at) : "";
 
 // No slicing, we pass all news but use CSS to limit height
 const displayNews = group.news;
@@ -54,11 +59,15 @@ const displayNews = group.news;
 
 <article
   class="flex flex-col bg-white border border-gray-200 shadow-[2px_2px_0px_rgba(0,0,0,0.05)] hover:shadow-[4px_4px_0px_rgba(0,0,0,0.1)] transition-shadow duration-300"
-  aria-label={`News from ${sourceConfig.name}`}>
-    <!-- Header -->
-    <div class="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
-      <div class="flex items-center gap-3">
-        {sourceConfig.icon ? (
+  aria-label={`News from ${sourceConfig.name}`}
+>
+  <!-- Header -->
+  <div
+    class="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50"
+  >
+    <div class="flex items-center gap-3">
+      {
+        sourceConfig.icon ? (
           <img
             src={sourceConfig.icon}
             alt={`${sourceConfig.name} logo`}
@@ -69,49 +78,56 @@ const displayNews = group.news;
           <div class="w-8 h-8 bg-gray-200 rounded-sm flex items-center justify-center text-xs font-bold text-gray-500">
             {sourceConfig.name.substring(0, 2)}
           </div>
-        )}
+        )
+      }
 
-        <div>
-          <h2 class="font-bold text-lg tracking-tight text-gray-900 leading-none">
-            {sourceConfig.name}
-          </h2>
+      <div>
+        <h2 class="font-bold text-lg tracking-tight text-gray-900 leading-none">
+          {sourceConfig.name}
+        </h2>
 
-          {updatedTime && (
+        {
+          updatedTime && (
             <span
               class="text-[10px] font-mono text-gray-400 uppercase tracking-wide"
               aria-live="polite"
             >
               {updatedTime}
             </span>
-          )}
-        </div>
+          )
+        }
       </div>
     </div>
+  </div>
 
-    <!-- News List -->
-    <div class="px-4 pt-2 pb-4">
-        {displayNews.length > 0 ? (
-            <div class="flex flex-col max-h-100 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent">
-                {displayNews.map((news) => (
-                    <NewsListItem news={news} />
-                ))}
-            </div>
-        ) : (
-             <div class="text-gray-400 text-sm italic py-4 text-center">No news available</div>
-        )}
-    </div>
+  <!-- News List -->
+  <div class="px-4 pt-2 pb-4">
+    {
+      displayNews.length > 0 ? (
+        <div class="flex flex-col max-h-100 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent">
+          {displayNews.map((news) => (
+            <NewsListItem news={news} />
+          ))}
+        </div>
+      ) : (
+        <div class="text-gray-400 text-sm italic py-4 text-center">
+          No news available
+        </div>
+      )
+    }
+  </div>
 </article>
 
 <style>
-    /* Custom scrollbar for webkit browsers */
-    .scrollbar-thin::-webkit-scrollbar {
-        width: 4px;
-    }
-    .scrollbar-thin::-webkit-scrollbar-track {
-        background: transparent;
-    }
-    .scrollbar-thin::-webkit-scrollbar-thumb {
-        background-color: #e5e7eb;
-        border-radius: 20px;
-    }
+  /* Custom scrollbar for webkit browsers */
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 4px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: #e5e7eb;
+    border-radius: 20px;
+  }
 </style>

@@ -6,6 +6,7 @@ import (
 	"shiori/internal/model"
 	"sort"
 	"sync"
+	"time"
 )
 
 const (
@@ -14,11 +15,11 @@ const (
 )
 
 type Store struct {
-	bySource map[string][]*model.News // source -> all articles
-	count    int
-	mu       sync.RWMutex
-	db       *sql.DB
-	feedType string // "latest" or "popular"
+	bySource      map[string][]*model.News // source -> all articles
+	count         int
+	lastScrapedAt time.Time
+	mu            sync.RWMutex
+	db            *sql.DB
 }
 
 // NewStore creates a new store (in-memory only, for backward compatibility)
@@ -29,11 +30,10 @@ func NewStore() *Store {
 }
 
 // NewStoreWithDB creates a store backed by SQLite
-func NewStoreWithDB(db *sql.DB, feedType string) *Store {
+func NewStoreWithDB(db *sql.DB) *Store {
 	return &Store{
 		bySource: make(map[string][]*model.News),
 		db:       db,
-		feedType: feedType,
 	}
 }
 
@@ -45,13 +45,13 @@ type SourceGroup struct {
 // LoadFromDB populates the in-memory cache from SQLite
 func (s *Store) LoadFromDB() error {
 	if s.db == nil {
-		return nil // No DB configured, skip
+		return nil
 	}
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	data, err := LoadNewsByFeedType(s.db, s.feedType, MaxNewsPerSource)
+	data, err := LoadNews(s.db, MaxNewsPerSource)
 	if err != nil {
 		return err
 	}
@@ -62,7 +62,7 @@ func (s *Store) LoadFromDB() error {
 		s.count += len(news)
 	}
 
-	log.Printf("Loaded %d news items for %s feed from database", s.count, s.feedType)
+	log.Printf("Loaded %d news items from database", s.count)
 	return nil
 }
 
@@ -82,15 +82,15 @@ func (s *Store) Save(news *model.News) bool {
 
 	// Persist to database first (if configured)
 	if s.db != nil {
-		if err := SaveNews(s.db, news, s.feedType); err != nil {
+		if err := SaveNews(s.db, news); err != nil {
 			log.Printf("Failed to save to database: %v", err)
-			// Continue anyway to keep in-memory working
 		}
 	}
 
 	// add to source list
 	s.bySource[source] = append([]*model.News{news}, s.bySource[source]...)
 	s.count++
+	s.lastScrapedAt = time.Now()
 
 	// sort by published_at (newest first)
 	sort.Slice(s.bySource[source], func(i, j int) bool {
@@ -132,4 +132,10 @@ func (s *Store) Count() int {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.count
+}
+
+func (s *Store) GetLastScrapedAt() time.Time {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.lastScrapedAt
 }

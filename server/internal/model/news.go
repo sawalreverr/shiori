@@ -10,22 +10,30 @@ type News struct {
 	ID          string
 	Title       string
 	URL         string
+	ImageURL    string
 	Source      string
-	Category    string
 	PublishedAt time.Time
-	ScrapedAt   time.Time
+	CreatedAt   time.Time
 }
 
-type NewsResponse struct {
+type MarketNewsResponse struct {
 	Title       string    `json:"title"`
 	URL         string    `json:"url"`
-	Category    string    `json:"category"`
+	ImageURL    string    `json:"image_url,omitzero"`
 	PublishedAt time.Time `json:"published_at,omitzero"`
 }
 
 type SourceGroupResponse struct {
-	Source string         `json:"id"`
-	News   []NewsResponse `json:"news"`
+	Source string               `json:"id"`
+	News   []MarketNewsResponse `json:"news"`
+}
+
+type MarketResponse struct {
+	Status        string                `json:"status"`
+	SourceCount   int                   `json:"source_count"`
+	TotalNews     int                   `json:"total_news"`
+	LastScrapedAt time.Time             `json:"last_scraped_at,omitzero"`
+	Items         []SourceGroupResponse `json:"items"`
 }
 
 func (a *News) GenerateID() {

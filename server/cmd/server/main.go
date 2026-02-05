@@ -29,42 +29,31 @@ func main() {
 
 	log.Printf("Database initialized at %s", cfg.DatabasePath)
 
-	// create stores with DB backing
-	latestStore := store.NewStoreWithDB(db, store.FeedTypeLatest)
-	popularStore := store.NewStoreWithDB(db, store.FeedTypePopular)
+	newsStore := store.NewStoreWithDB(db)
 
-	// Load existing data from DB into cache
-	if err := latestStore.LoadFromDB(); err != nil {
-		log.Printf("Warning: failed to load latest from DB: %v", err)
-	}
-	if err := popularStore.LoadFromDB(); err != nil {
-		log.Printf("Warning: failed to load popular from DB: %v", err)
+	if err := newsStore.LoadFromDB(); err != nil {
+		log.Printf("Warning: failed to load from DB: %v", err)
 	}
 
-	// create scraper
 	manager := scraper.NewManager(cfg)
 	client := manager.GetHTTPClient()
 
-	manager.Register(scraper.NewKompasScraper(client))
-	manager.Register(scraper.NewDetikScraper(client))
-	manager.Register(scraper.NewBloomberTechnozScraper(client))
-	manager.Register(scraper.NewLiputan6Scraper(client))
-	manager.Register(scraper.NewTribunNewsScraper(client))
-	manager.Register(scraper.NewCNNIndonesiaScraper(client))
+	manager.Register(scraper.NewBloombergTechnozScraper(client))
+	manager.Register(scraper.NewCNBCIndonesiaScraper(client))
+	manager.Register(scraper.NewBisnisIndonesiaScraper(client))
+	manager.Register(scraper.NewDetikFinanceScraper(client))
 
 	go func() {
-		scrapeNews(manager, latestStore, popularStore)
+		scrapeNews(manager, newsStore)
 
-		// then scrape every interval
 		ticker := time.NewTicker(cfg.ScraperInterval)
 		for range ticker.C {
-			scrapeNews(manager, latestStore, popularStore)
+			scrapeNews(manager, newsStore)
 		}
 	}()
 
-	// setup HTTP routes
 	mux := http.NewServeMux()
-	handler := api.NewHandler(latestStore, popularStore)
+	handler := api.NewHandler(newsStore)
 	handler.RegisterRoutes(mux)
 
 	// start server
@@ -91,35 +80,20 @@ func main() {
 	server.Shutdown(ctx)
 }
 
-func scrapeNews(manager *scraper.Manager, latestStore, popularStore *store.Store) {
+func scrapeNews(manager *scraper.Manager, newsStore *store.Store) {
 	ctx := context.Background()
 
-	// Scrape latest
-	newsArr, errors := manager.ScrapeAllLatest(ctx)
+	newsArr, errors := manager.ScrapeAll(ctx)
 	for _, err := range errors {
 		log.Printf("Error: %v", err)
 	}
 
-	// Save news
-	latestCount := 0
+	count := 0
 	for _, news := range newsArr {
-		if latestStore.Save(news) {
-			latestCount++
+		if newsStore.Save(news) {
+			count++
 		}
 	}
 
-	// Scrape Popular
-	popular, errors := manager.ScrapeAllPopular(ctx)
-	for _, err := range errors {
-		log.Printf("Error: %v", err)
-	}
-
-	popularCount := 0
-	for _, news := range popular {
-		if popularStore.Save(news) {
-			popularCount++
-		}
-	}
-
-	log.Printf("Scrape done: %d latest, %d popular", latestCount, popularCount)
+	log.Printf("Scrape done: %d news items", count)
 }

@@ -1,6 +1,6 @@
 ---
-import type { SourceGroup } from '../types';
-import SourceColumn from './SourceColumn.astro';
+import type { SourceGroup } from "../types";
+import SourceColumn from "./SourceColumn.astro";
 
 interface Props {
   groups: SourceGroup[];
@@ -9,15 +9,21 @@ interface Props {
 const { groups } = Astro.props;
 
 // Filter out groups with no news
-const validGroups = groups.filter(group => group.news && group.news.length > 0);
+const validGroups = groups.filter(
+  (group) => group.news && group.news.length > 0,
+);
 ---
 
 <div class="w-full max-w-400 mx-auto px-4 py-8">
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-    {validGroups.map((group) => (
-      <div class="mb-2">
-        <SourceColumn group={group} />
-      </div>
-    ))}
+  <div
+    class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+  >
+    {
+      validGroups.map((group) => (
+        <div class="mb-2">
+          <SourceColumn group={group} />
+        </div>
+      ))
+    }
   </div>
 </div>

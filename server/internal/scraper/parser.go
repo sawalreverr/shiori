@@ -25,24 +25,6 @@ func (p *Parser) StripTags(html string) string {
 	return text
 }
 
-// DecodeHTMLEntities converts &amp; to & etc
-func (p *Parser) DecodeHTMLEntities(text string) string {
-	replacements := map[string]string{
-		"&nbsp;": "",
-		"&amp;":  "&",
-		"&lt;":   "<",
-		"&gt;":   ">",
-		"&quot;": "\"",
-		"&#39;":  "'",
-	}
-
-	for entity, char := range replacements {
-		text = strings.ReplaceAll(text, entity, char)
-	}
-
-	return text
-}
-
 // ExtractBetween returns string parsing
 func (p *Parser) ExtractBetween(s, start, end string) string {
 	i := strings.Index(s, start)
@@ -61,7 +43,7 @@ func (p *Parser) ExtractBetween(s, start, end string) string {
 // ParseTime returns time formatting in bahasa
 func (p *Parser) ParseTime(s string) time.Time {
 	now := time.Now()
-	s = p.DecodeHTMLEntities(s)
+	s = strings.TrimSpace(s)
 	s = strings.ToLower(s)
 
 	parts := strings.Split(s, " ")

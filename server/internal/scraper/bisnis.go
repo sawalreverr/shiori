@@ -10,35 +10,35 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
-type BloombergTechnozScraper struct {
+type BisnisIndonesiaScraper struct {
 	client *HTTPClient
 	parser *Parser
 }
 
-func NewBloombergTechnozScraper(client *HTTPClient) *BloombergTechnozScraper {
-	return &BloombergTechnozScraper{client: client, parser: NewParser()}
+func NewBisnisIndonesiaScraper(client *HTTPClient) *BisnisIndonesiaScraper {
+	return &BisnisIndonesiaScraper{client: client, parser: NewParser()}
 }
 
-func (s *BloombergTechnozScraper) Name() string {
-	return "BloombergTechnoz"
+func (s *BisnisIndonesiaScraper) Name() string {
+	return "Bisnis Indonesia"
 }
 
-func (s *BloombergTechnozScraper) Scrape(ctx context.Context) ([]*model.News, error) {
-	url := "https://www.bloombergtechnoz.com/indeks/market"
+func (s *BisnisIndonesiaScraper) Scrape(ctx context.Context) ([]*model.News, error) {
+	url := "https://www.bisnis.com/index?categoryId=194&date=&type=indeks"
 	body, err := s.client.Fetch(ctx, url)
 	if err != nil {
-		return nil, fmt.Errorf("fetch bloombergtechnoz: %w", err)
+		return nil, fmt.Errorf("fetch bisnis: %w", err)
 	}
 
 	doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(body)))
 	if err != nil {
-		return nil, fmt.Errorf("parse bloombergtechnoz: %w", err)
+		return nil, fmt.Errorf("parse bisnis: %w", err)
 	}
 
 	var news []*model.News
 	seen := make(map[string]bool)
 
-	doc.Find("div.card-box.ft150.margin-bottom-xl").Each(func(i int, sel *goquery.Selection) {
+	doc.Find("div#indeksListView div.artWrap div.artItem").Each(func(i int, sel *goquery.Selection) {
 		aEl := sel.Find("a")
 		linkHref, exists := aEl.Attr("href")
 		if !exists {
@@ -50,22 +50,17 @@ func (s *BloombergTechnozScraper) Scrape(ctx context.Context) ([]*model.News, er
 		}
 		seen[linkHref] = true
 
-		titleEl := sel.Find(".title.margin-bottom-xs")
+		titleEl := sel.Find("h4.artTitle")
 		title := strings.TrimSpace(titleEl.Text())
 
-		imgEl := sel.Find(".img-card img")
+		imgEl := sel.Find("img")
 		imgSrc, exists := imgEl.Attr("src")
 		if !exists {
 			return
 		}
 
-		additionsEl := sel.Find(".title.fw4.cl-blue").Text()
-		additions := strings.Split(additionsEl, "|")
-		if len(additions) == 0 {
-			return
-		}
-
-		published := s.parser.ParseTime(strings.TrimSpace(additions[1]))
+		publishedEl := sel.Find("div.artDate")
+		published := s.parser.ParseTime(publishedEl.Text())
 
 		news = append(news, &model.News{
 			Title:       title,

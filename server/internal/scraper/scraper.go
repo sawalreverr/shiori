@@ -13,8 +13,7 @@ import (
 
 type Scraper interface {
 	Name() string
-	ScrapeLatest(ctx context.Context) ([]*model.News, error)
-	ScrapePopular(ctx context.Context) ([]*model.News, error)
+	Scrape(ctx context.Context) ([]*model.News, error)
 }
 
 type HTTPClient struct {
@@ -83,8 +82,7 @@ func (m *Manager) GetHTTPClient() *HTTPClient {
 	return m.client
 }
 
-// ScrapeAllLatest gets latest news from all scrapers
-func (m *Manager) ScrapeAllLatest(ctx context.Context) ([]*model.News, []error) {
+func (m *Manager) ScrapeAll(ctx context.Context) ([]*model.News, []error) {
 	var (
 		allNews   []*model.News
 		allErrors []error
@@ -100,41 +98,7 @@ func (m *Manager) ScrapeAllLatest(ctx context.Context) ([]*model.News, []error) 
 			scrapeCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 			defer cancel()
 
-			news, err := scraper.ScrapeLatest(scrapeCtx)
-
-			mu.Lock()
-			defer mu.Unlock()
-
-			if err != nil {
-				allErrors = append(allErrors, fmt.Errorf("%s: %w", scraper.Name(), err))
-			} else {
-				allNews = append(allNews, news...)
-			}
-		}(s)
-	}
-
-	wg.Wait()
-	return allNews, allErrors
-}
-
-// ScrapeAllPopular gets popular news from all scrapers
-func (m *Manager) ScrapeAllPopular(ctx context.Context) ([]*model.News, []error) {
-	var (
-		allNews   []*model.News
-		allErrors []error
-		mu        sync.Mutex
-		wg        sync.WaitGroup
-	)
-
-	for _, s := range m.scrapers {
-		wg.Add(1)
-		go func(scraper Scraper) {
-			defer wg.Done()
-
-			scrapeCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
-			defer cancel()
-
-			news, err := scraper.ScrapePopular(scrapeCtx)
+			news, err := scraper.Scrape(scrapeCtx)
 
 			mu.Lock()
 			defer mu.Unlock()
