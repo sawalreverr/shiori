@@ -72,27 +72,35 @@ func (p *Parser) ParseTime(s string) time.Time {
 }
 
 // ParseTimeFormat returns time formatting with spesific format
-func (p *Parser) ParseTimeFormat(s string, f string) (time.Time, error) {
-	var monthMap = map[string]string{
-		"Januari":   "January",
-		"Februari":  "February",
-		"Maret":     "March",
-		"April":     "April",
-		"Mei":       "May",
-		"Juni":      "June",
-		"Juli":      "July",
-		"Agustus":   "August",
-		"September": "September",
-		"Oktober":   "October",
-		"November":  "November",
-		"Desember":  "December",
+func (p *Parser) ParseTimeFormat(s string, layout string) (time.Time, error) {
+	monthMap := map[string]string{
+		"januari":   "January",
+		"februari":  "February",
+		"maret":     "March",
+		"april":     "April",
+		"mei":       "May",
+		"juni":      "June",
+		"juli":      "July",
+		"agustus":   "August",
+		"september": "September",
+		"oktober":   "October",
+		"november":  "November",
+		"desember":  "December",
 	}
 
-	formatted := strings.SplitN(s, ", ", 2)[1]
-	formatted = strings.Replace(formatted, "WIB", "+0700", 1)
+	formatted := strings.TrimSpace(s)
+	formatted = strings.ReplaceAll(formatted, "WIB", "+0700")
+	formatted = strings.ReplaceAll(formatted, ",", "")
+
+	formatted = strings.ToLower(formatted)
+
 	for id, en := range monthMap {
-		formatted = strings.Replace(formatted, id, en, 1)
+		if strings.Contains(formatted, id) {
+			formatted = strings.Replace(formatted, id, en, 1)
+			break
+		}
 	}
 
-	return time.Parse(f, formatted)
+	loc, _ := time.LoadLocation("Asia/Jakarta")
+	return time.ParseInLocation(layout, formatted, loc)
 }

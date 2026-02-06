@@ -40,6 +40,8 @@ func main() {
 	manager.Register(scraper.NewCNBCIndonesiaScraper(client))
 	manager.Register(scraper.NewBisnisIndonesiaScraper(client))
 	manager.Register(scraper.NewDetikFinanceScraper(client))
+	manager.Register(scraper.NewKatadataScraper(client))
+	manager.Register(scraper.NewStockWatchScraper(client))
 
 	go func() {
 		scrapeNews(manager, newsStore)
