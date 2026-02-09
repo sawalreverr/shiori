@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"shiori/internal/model"
 	"strings"
-	"time"
 
 	"github.com/PuerkitoBio/goquery"
 )
@@ -50,14 +49,8 @@ func (s *BloombergTechnozScraper) Scrape(ctx context.Context) ([]*model.News, er
 		}
 		seen[linkHref] = true
 
-		titleEl := sel.Find(".title.margin-bottom-xs")
-		title := strings.TrimSpace(titleEl.Text())
-
-		imgEl := sel.Find(".img-card img")
-		imgSrc, exists := imgEl.Attr("src")
-		if !exists {
-			return
-		}
+		title := strings.TrimSpace(sel.Find(".title.margin-bottom-xs").Text())
+		imgLink, _ := sel.Find(".img-card img").Attr("src")
 
 		additionsEl := sel.Find(".title.fw4.cl-blue").Text()
 		additions := strings.Split(additionsEl, "|")
@@ -70,10 +63,9 @@ func (s *BloombergTechnozScraper) Scrape(ctx context.Context) ([]*model.News, er
 		news = append(news, &model.News{
 			Title:       title,
 			URL:         linkHref,
-			ImageURL:    imgSrc,
+			ImageURL:    imgLink,
 			Source:      s.Name(),
 			PublishedAt: published,
-			CreatedAt:   time.Now(),
 		})
 	})
 

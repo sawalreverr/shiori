@@ -54,23 +54,16 @@ func (s *StockWatchScraper) Scrape(ctx context.Context) ([]*model.News, error) {
 
 			title := aEl.Text()
 
-			imgEl := sel.Find(".entry-thumb.td-thumb-css")
-			imgSrc, exists := imgEl.Attr("data-img-url")
-			if !exists {
-				return
-			}
+			imgLink, _ := sel.Find(".entry-thumb.td-thumb-css").Attr("data-img-url")
 
 			publishedEl := sel.Find(".td-module-date")
-			publishedDt, exists := publishedEl.Attr("datetime")
-			if !exists {
-				return
-			}
+			publishedDt, _ := publishedEl.Attr("datetime")
 			published, _ := time.Parse(time.RFC3339, publishedDt)
 
 			news = append(news, &model.News{
 				Title:       title,
 				URL:         linkHref,
-				ImageURL:    imgSrc,
+				ImageURL:    imgLink,
 				Source:      s.Name(),
 				PublishedAt: published,
 			})
@@ -90,23 +83,16 @@ func (s *StockWatchScraper) Scrape(ctx context.Context) ([]*model.News, error) {
 
 			title := aEl.Text()
 
-			imgEl := sel.Find(".entry-thumb.td-thumb-css")
-			imgSrc, exists := imgEl.Attr("data-img-url")
-			if !exists {
-				return
-			}
+			imgLink, _ := sel.Find(".entry-thumb.td-thumb-css").Attr("data-img-url")
 
 			publishedEl := sel.Find(".td-module-date")
-			publishedDt, exists := publishedEl.Attr("datetime")
-			if !exists {
-				return
-			}
+			publishedDt, _ := publishedEl.Attr("datetime")
 			published, _ := time.Parse(time.RFC3339, publishedDt)
 
 			news = append(news, &model.News{
 				Title:       title,
 				URL:         linkHref,
-				ImageURL:    imgSrc,
+				ImageURL:    imgLink,
 				Source:      s.Name(),
 				PublishedAt: published,
 			})

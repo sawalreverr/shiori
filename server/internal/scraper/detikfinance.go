@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"shiori/internal/model"
 	"strings"
-	"time"
 
 	"github.com/PuerkitoBio/goquery"
 )
@@ -50,14 +49,8 @@ func (s *DetikFinanceScraper) Scrape(ctx context.Context) ([]*model.News, error)
 		}
 		seen[linkHref] = true
 
-		titleEl := sel.Find("h3.media__title")
-		title := strings.TrimSpace(titleEl.Text())
-
-		imgEl := sel.Find("img")
-		imgSrc, exists := imgEl.Attr("src")
-		if !exists {
-			return
-		}
+		title := strings.TrimSpace(sel.Find("h3.media__title").Text())
+		imgLink, _ := sel.Find("img").Attr("src")
 
 		publishedEl := sel.Find("div.media__date")
 		published := s.parser.ParseTime(publishedEl.Text())
@@ -65,10 +58,9 @@ func (s *DetikFinanceScraper) Scrape(ctx context.Context) ([]*model.News, error)
 		news = append(news, &model.News{
 			Title:       title,
 			URL:         linkHref,
-			ImageURL:    imgSrc,
+			ImageURL:    imgLink,
 			Source:      s.Name(),
 			PublishedAt: published,
-			CreatedAt:   time.Now(),
 		})
 	})
 

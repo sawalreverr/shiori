@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"shiori/internal/model"
 	"strings"
-	"time"
 
 	"github.com/PuerkitoBio/goquery"
 )
@@ -50,14 +49,8 @@ func (s *BisnisIndonesiaScraper) Scrape(ctx context.Context) ([]*model.News, err
 		}
 		seen[linkHref] = true
 
-		titleEl := sel.Find("h4.artTitle")
-		title := strings.TrimSpace(titleEl.Text())
-
-		imgEl := sel.Find("img")
-		imgSrc, exists := imgEl.Attr("src")
-		if !exists {
-			return
-		}
+		title := strings.TrimSpace(sel.Find("h4.artTitle").Text())
+		imgLink, _ := sel.Find("img").Attr("src")
 
 		publishedEl := sel.Find("div.artDate")
 		published := s.parser.ParseTime(publishedEl.Text())
@@ -65,10 +58,9 @@ func (s *BisnisIndonesiaScraper) Scrape(ctx context.Context) ([]*model.News, err
 		news = append(news, &model.News{
 			Title:       title,
 			URL:         linkHref,
-			ImageURL:    imgSrc,
+			ImageURL:    imgLink,
 			Source:      s.Name(),
 			PublishedAt: published,
-			CreatedAt:   time.Now(),
 		})
 	})
 

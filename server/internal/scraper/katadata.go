@@ -40,12 +40,6 @@ func (s *KatadataScraper) Scrape(ctx context.Context) ([]*model.News, error) {
 
 	// headline slider news
 	doc.Find(".container article").Each(func(i int, sel *goquery.Selection) {
-		headlineTitle := sel.Find("h2").Text()
-		headlineTitle = strings.TrimSpace(headlineTitle)
-		if headlineTitle == "" {
-			return
-		}
-
 		aEl := sel.Find("a")
 		linkHref, exists := aEl.Attr("href")
 		if !exists {
@@ -57,6 +51,8 @@ func (s *KatadataScraper) Scrape(ctx context.Context) ([]*model.News, error) {
 		}
 		seen[linkHref] = true
 
+		title := strings.TrimSpace(sel.Find("h2").Text())
+
 		body, err := s.client.Fetch(ctx, linkHref)
 		if err != nil {
 			return
@@ -67,19 +63,15 @@ func (s *KatadataScraper) Scrape(ctx context.Context) ([]*model.News, error) {
 			return
 		}
 
-		headlineImgEl := doc.Find(".detail-image img.img-fullwidth")
-		headlineImgSrc, exists := headlineImgEl.Attr("src")
-		if !exists {
-			return
-		}
+		imgLink, _ := doc.Find(".detail-image img.img-fullwidth").Attr("src")
 
 		published_at := doc.Find(".detail-date").Text()
 		published, _ := s.parser.ParseTimeFormat(published_at, "2 January 2006 15:04")
 
 		news = append(news, &model.News{
-			Title:       headlineTitle,
+			Title:       title,
 			URL:         linkHref,
-			ImageURL:    headlineImgSrc,
+			ImageURL:    imgLink,
 			Source:      s.Name(),
 			PublishedAt: published,
 		})
@@ -87,12 +79,6 @@ func (s *KatadataScraper) Scrape(ctx context.Context) ([]*model.News, error) {
 
 	// headline items news
 	doc.Find(".headline-item").Each(func(i int, sel *goquery.Selection) {
-		headlineTitle := sel.Find("h2").Text()
-		headlineTitle = strings.TrimSpace(headlineTitle)
-		if headlineTitle == "" {
-			return
-		}
-
 		aEl := sel.Find("a")
 		linkHref, exists := aEl.Attr("href")
 		if !exists {
@@ -103,6 +89,8 @@ func (s *KatadataScraper) Scrape(ctx context.Context) ([]*model.News, error) {
 			return
 		}
 		seen[linkHref] = true
+
+		title := strings.TrimSpace(sel.Find("h2").Text())
 
 		body, err := s.client.Fetch(ctx, linkHref)
 		if err != nil {
@@ -114,31 +102,21 @@ func (s *KatadataScraper) Scrape(ctx context.Context) ([]*model.News, error) {
 			return
 		}
 
-		headlineImgEl := doc.Find(".detail-image img.img-fullwidth")
-		headlineImgSrc, exists := headlineImgEl.Attr("src")
-		if !exists {
-			return
-		}
+		imgLink, _ := doc.Find(".detail-image img.img-fullwidth").Attr("src")
 
 		published_at := doc.Find(".detail-date").Text()
 		published, _ := s.parser.ParseTimeFormat(published_at, "2 January 2006 15:04")
 
 		news = append(news, &model.News{
-			Title:       headlineTitle,
+			Title:       title,
 			URL:         linkHref,
-			ImageURL:    headlineImgSrc,
+			ImageURL:    imgLink,
 			Source:      s.Name(),
 			PublishedAt: published,
 		})
 	})
 
 	doc.Find("article.article.article--berita.d-flex").Each(func(i int, sel *goquery.Selection) {
-		title := sel.Find("h3").Text()
-		title = strings.TrimSpace(title)
-		if title == "" {
-			return
-		}
-
 		aEl := sel.Find("a")
 		linkHref, exists := aEl.Attr("href")
 		if !exists {
@@ -150,11 +128,9 @@ func (s *KatadataScraper) Scrape(ctx context.Context) ([]*model.News, error) {
 		}
 		seen[linkHref] = true
 
-		imgEl := sel.Find(".content-image.scale img")
-		imgSrc, exists := imgEl.Attr("data-src")
-		if !exists {
-			return
-		}
+		title := strings.TrimSpace(sel.Find("h3").Text())
+
+		imgLink, _ := sel.Find(".content-image.scale img").Attr("data-src")
 
 		published_at := sel.Find(".article__date").Text() // • 6 Februari 2026, 15.27
 		published_at = strings.Split(published_at, "•")[1]
@@ -163,7 +139,7 @@ func (s *KatadataScraper) Scrape(ctx context.Context) ([]*model.News, error) {
 		news = append(news, &model.News{
 			Title:       title,
 			URL:         linkHref,
-			ImageURL:    imgSrc,
+			ImageURL:    imgLink,
 			Source:      s.Name(),
 			PublishedAt: published,
 		})
