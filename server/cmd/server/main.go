@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -25,12 +26,12 @@ func main() {
 	}
 	defer db.Close()
 
-	log.Printf("Database initialized at %s", cfg.DatabasePath)
+	slog.Info("Database initialized", "path", cfg.DatabasePath)
 
 	newsStore := store.NewStoreWithDB(db)
 
 	if err := newsStore.LoadFromDB(); err != nil {
-		log.Printf("Warning: failed to load from DB: %v", err)
+			slog.Warn("Failed to load from database", "error", err)
 	}
 
 	manager := scraper.NewManager(cfg)
@@ -68,13 +69,13 @@ func main() {
 
 	server := &http.Server{
 		Addr:    fmt.Sprintf(":%d", cfg.Port),
-		Handler: api.CORSMiddleware(mux),
+	Handler: api.CORSMiddleware(api.RequestIDMiddleware(mux)),
 	}
 
 	go func() {
-		log.Printf("Server running at http://localhost:%d", cfg.Port)
+			slog.Info("Server starting", "port", cfg.Port, "addr", fmt.Sprintf("http://localhost:%d", cfg.Port))
 		if err := server.ListenAndServe(); err != http.ErrServerClosed {
-			log.Fatal(err)
+				slog.Error("Server failed to start", "error", err)
 		}
 	}()
 
@@ -82,7 +83,7 @@ func main() {
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
 	<-quit
 
-	log.Println("Shutting down...")
+	slog.Info("Shutting down server")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	server.Shutdown(ctx)
@@ -108,7 +109,7 @@ func scrapeNews(manager *scraper.Manager, newsStore *store.Store) {
 
 	newsArr, errors := manager.ScrapeAll(ctx)
 	for _, err := range errors {
-		log.Printf("Error: %v", err)
+			slog.Error("Scraper error", "error", err)
 	}
 
 	count := 0
@@ -118,5 +119,5 @@ func scrapeNews(manager *scraper.Manager, newsStore *store.Store) {
 		}
 	}
 
-	log.Printf("Scrape done: %d news items", count)
+	slog.Info("Scrape completed", "count", count, "market_hours", isMarketHours())
 }

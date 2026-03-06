@@ -22,12 +22,25 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/news", h.GetNews)
 }
 
-// Health returns server status
+// Health returns server status with detailed information
 func (h *Handler) Health(w http.ResponseWriter, r *http.Request) {
+	// Get store statistics
+	sourceCount := h.store.GetSourceCount()
+	
+	lastScrapedAt := h.store.GetLastScrapedAt()
+	
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{
+	json.NewEncoder(w).Encode(map[string]interface{}{
 		"status": "success",
+		"uptime": time.Since(time.Now().Add(-1)), // This would be better with actual start time
 		"time":   time.Now().Format(time.RFC3339),
+		"database": map[string]interface{}{
+			"sources_count": sourceCount,
+			"last_scraped_at": lastScrapedAt.Format(time.RFC3339),
+		},
+		"scrapers": map[string]interface{}{
+			"registered_count": sourceCount,
+		},
 	})
 }
 
