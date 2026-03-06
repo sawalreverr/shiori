@@ -34,6 +34,15 @@ func OpenDB(path string) (*sql.DB, error) {
 		return nil, fmt.Errorf("create data directory: %w", err)
 	}
 
+	// Clean up orphaned WAL files if main database doesn't exist
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		// Remove any WAL files that might be left over
+		walFiles := []string{path + "-wal", path + "-shm"}
+		for _, walFile := range walFiles {
+			os.Remove(walFile) // Ignore errors
+		}
+	}
+
 	db, err := sql.Open("sqlite", path)
 	if err != nil {
 		return nil, fmt.Errorf("open database: %w", err)
