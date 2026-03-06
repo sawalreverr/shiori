@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 )
+
 const (
 	MaxNewsPerSource = 100
 	DefaultLimit     = 20
@@ -61,7 +62,7 @@ func (s *Store) LoadFromDB() error {
 		s.count += len(news)
 	}
 
-		slog.Info("Loaded news items from database", "count", s.count)
+	slog.Info("Loaded news items from database", "count", s.count)
 	return nil
 }
 
@@ -82,7 +83,7 @@ func (s *Store) Save(news *model.News) bool {
 	// Persist to database first (if configured)
 	if s.db != nil {
 		if err := SaveNews(s.db, news); err != nil {
-				slog.Error("Failed to save to database", "error", err)
+			slog.Error("Failed to save to database", "error", err)
 		}
 	}
 
@@ -122,6 +123,11 @@ func (s *Store) GetGrouped(limit int) []SourceGroup {
 		}
 		groups = append(groups, SourceGroup{source, news})
 	}
+
+	// Sort groups alphabetically by source name
+	sort.Slice(groups, func(i, j int) bool {
+		return groups[i].Source < groups[j].Source
+	})
 
 	return groups
 }
