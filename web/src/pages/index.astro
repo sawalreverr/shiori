@@ -1,20 +1,18 @@
 ---
 import FeedGrid from "../components/FeedGrid.astro";
-import type { ApiResponse } from "../types";
+import type { MarketResponse } from "../types";
 import "../styles/global.css";
 
-let data: ApiResponse | null = null;
-let error = null;
+let data: MarketResponse | null = null;
+let error = false;
 
 try {
-  // Fetching directly from backend address since this runs on server
   const response = await fetch("http://localhost:8080/api/news");
   if (!response.ok) throw new Error("Failed to fetch");
   data = await response.json();
 } catch (e) {
   console.error("Fetch error:", e);
-  error = e;
-  data = { status: "error", items: [] };
+  error = true;
 }
 ---
 
@@ -26,63 +24,56 @@ try {
     <meta name="generator" content={Astro.generator} />
     <title>Shiori News</title>
   </head>
-  <body
-    class="bg-[#F2F0E9] text-gray-900 font-sans min-h-screen selection:bg-black selection:text-white"
-  >
-    <header
-      class="border-b border-gray-200 bg-white/80 backdrop-blur-md sticky top-0 z-10"
-    >
+  <body class="bg-[#F2F0E9] text-gray-900 font-sans min-h-screen selection:bg-black selection:text-white">
+    <header class="border-b border-gray-200 bg-white/80 backdrop-blur-md sticky top-0 z-10">
       <div class="max-w-7xl mx-auto px-4 py-6 flex justify-between items-end">
         <div>
-          <h1 class="text-4xl font-black tracking-tighter leading-none">
-            SHIORI.
-          </h1>
+          <h1 class="text-4xl font-black tracking-tighter leading-none">SHIORI.</h1>
           <p class="text-sm text-gray-500 mt-1 font-mono tracking-wide">
-            Reading latest and popular news from many sources.
+            Market-focused Indonesian financial news aggregator.
           </p>
         </div>
         <div class="text-right hidden sm:block">
-          <div
-            class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1"
-          >
-            Edition
-          </div>
+          <div class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">Edition</div>
           <div class="text-sm font-mono text-gray-900">
-            {
-              new Date().toLocaleDateString("en-US", {
-                weekday: "long",
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-              })
-            }
+            {new Date().toLocaleDateString("en-US", {
+              weekday: "long",
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            })}
           </div>
         </div>
       </div>
     </header>
 
     <main class="min-h-[calc(100vh-100px)]">
-      {
-        error ? (
-          <div class="flex flex-col items-center justify-center py-20 text-gray-500">
-            <div class="text-6xl mb-4">⚡</div>
-            <div class="font-mono text-lg">Connection to server failed.</div>
-            <p class="text-sm mt-2 opacity-50">
-              Is the backend running on port 8080?
-            </p>
+      {error && (
+        <div class="flex flex-col items-center justify-center py-20 text-gray-500">
+          <div class="text-6xl mb-4">⚡</div>
+          <div class="font-mono text-lg">Connection to server failed.</div>
+          <p class="text-sm mt-2 opacity-50">Is the backend running on port 8080?</p>
+        </div>
+      )}
+      {!error && data && (
+        <>
+          <div class="max-w-7xl mx-auto px-4 py-4">
+            <div class="flex flex-wrap gap-4 text-sm font-mono text-gray-500 border-b border-gray-200 pb-4 mb-6">
+              <span>_sources: <strong>{data.source_count}</strong>_</span>
+              <span>news: <strong>{data.total_news}</strong></span>
+            </div>
           </div>
-        ) : (
-          <FeedGrid groups={data?.items || []} />
-        )
-      }
+          <FeedGrid groups={data.items || []} />
+        </>
+      )}
     </main>
 
     <footer class="border-t border-gray-200 py-8 mt-12 bg-white">
-      <div
-        class="max-w-7xl mx-auto px-4 text-center text-gray-400 font-mono text-xs"
-      >
+      <div class="max-w-7xl mx-auto px-4 text-center text-gray-400 font-mono text-xs">
         SHIORI &copy; 2026
       </div>
     </footer>
+
+    <script type="module" src="/src/lib/news-poller.js"></script>
   </body>
 </html>

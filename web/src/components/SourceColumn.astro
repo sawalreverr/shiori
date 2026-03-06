@@ -1,9 +1,11 @@
 ---
-import type { SourceGroup } from "../types";
+import type { SourceGroupResponse } from "../types";
 import NewsListItem from "./NewsListItem.astro";
+import { formatDistanceToNow, parseISO } from 'date-fns';
+import { id } from 'date-fns/locale';
 
 interface Props {
-  group: SourceGroup;
+  group: SourceGroupResponse;
 }
 
 const { group } = Astro.props;
@@ -35,19 +37,25 @@ if (!sourceConfig) {
   }
 }
 
-// Calculate relative time from latest news
+// Calculate relative time from latest news using date-fns
 const getRelativeTime = (dateStr?: string) => {
   if (!dateStr) return "";
-  const now = new Date();
-  const date = new Date(dateStr);
-  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-  const diffInMinutes = Math.floor(diffInSeconds / 60);
-  const diffInHours = Math.floor(diffInMinutes / 60);
+  try {
+    const date = parseISO(dateStr);
+    return formatDistanceToNow(date, { addSuffix: true, locale: id });
+  } catch (error) {
+    // Fallback to original method if parsing fails
+    const now = new Date();
+    const date = new Date(dateStr);
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+    const diffInMinutes = Math.floor(diffInSeconds / 60);
+    const diffInHours = Math.floor(diffInMinutes / 60);
 
-  if (diffInMinutes < 1) return "updated just now";
-  if (diffInMinutes < 60) return `updated ${diffInMinutes} minutes ago`;
-  if (diffInHours < 24) return `updated ${diffInHours} hours ago`;
-  return `updated on ${date.toLocaleDateString()}`;
+    if (diffInMinutes < 1) return "updated just now";
+    if (diffInMinutes < 60) return `updated ${diffInMinutes} minutes ago`;
+    if (diffInHours < 24) return `updated ${diffInHours} hours ago`;
+    return `updated on ${date.toLocaleDateString()}`;
+  }
 };
 
 const latestNews = group.news[0];
@@ -66,55 +74,49 @@ const displayNews = group.news;
     class="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50"
   >
     <div class="flex items-center gap-3">
-      {
-        sourceConfig.icon ? (
-          <img
-            src={sourceConfig.icon}
-            alt={`${sourceConfig.name} logo`}
-            class="w-8 h-8 object-contain rounded-sm mix-blend-multiply"
-            loading="lazy"
-          />
-        ) : (
-          <div class="w-8 h-8 bg-gray-200 rounded-sm flex items-center justify-center text-xs font-bold text-gray-500">
-            {sourceConfig.name.substring(0, 2)}
-          </div>
-        )
-      }
+      {sourceConfig.icon ? (
+        <img
+          src={sourceConfig.icon}
+          alt={`${sourceConfig.name} logo`}
+          class="w-8 h-8 object-contain rounded-sm mix-blend-multiply"
+          loading="lazy"
+        />
+      ) : (
+        <div class="w-8 h-8 bg-gray-200 rounded-sm flex items-center justify-center text-xs font-bold text-gray-500">
+          {sourceConfig.name.substring(0, 2)}
+        </div>
+      )}
 
       <div>
         <h2 class="font-bold text-lg tracking-tight text-gray-900 leading-none">
           {sourceConfig.name}
         </h2>
 
-        {
-          updatedTime && (
-            <span
-              class="text-[10px] font-mono text-gray-400 uppercase tracking-wide"
-              aria-live="polite"
-            >
-              {updatedTime}
-            </span>
-          )
-        }
+        {updatedTime && (
+          <span
+            class="text-[10px] font-mono text-gray-400 uppercase tracking-wide"
+            aria-live="polite"
+          >
+            {updatedTime}
+          </span>
+        )}
       </div>
     </div>
   </div>
 
   <!-- News List -->
   <div class="px-4 pt-2 pb-4">
-    {
-      displayNews.length > 0 ? (
-        <div class="flex flex-col max-h-100 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent">
-          {displayNews.map((news) => (
-            <NewsListItem news={news} />
-          ))}
-        </div>
-      ) : (
-        <div class="text-gray-400 text-sm italic py-4 text-center">
-          No news available
-        </div>
-      )
-    }
+    {displayNews.length > 0 ? (
+      <div class="flex flex-col max-h-100 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent">
+        {displayNews.map((news) => (
+          <NewsListItem news={news} />
+        ))}
+      </div>
+    ) : (
+      <div class="text-gray-400 text-sm italic py-4 text-center">
+        No news available
+      </div>
+    )}
   </div>
 </article>
 

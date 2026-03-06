@@ -1,8 +1,8 @@
 ---
-import type { NewsItem } from "../types";
+import type { MarketNewsResponse } from "../types";
 
 interface Props {
-  news: NewsItem;
+  news: MarketNewsResponse;
   featured?: boolean;
 }
 
@@ -16,13 +16,27 @@ const cleanTitle = news.title.replace(/<[^>]*>?/gm, "");
   rel="noopener noreferrer"
   class="group block py-3 border-b border-gray-100 last:border-0 hover:bg-gray-50 -mx-2 px-2 transition-colors duration-200"
 >
-  <article>
-    <h3
-      class:list={[
-        "font-medium text-gray-900 group-hover:text-black leading-snug text-sm",
-      ]}
-    >
-      {cleanTitle}
-    </h3>
+  <article class="flex gap-3">
+    {news.image_url && (
+      <div class="flex-shrink-0 w-16 h-16 overflow-hidden rounded-sm border border-gray-200 bg-gray-100">
+        <img
+          src={news.image_url}
+          alt=""
+          class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+          loading="lazy"
+          onerror="this.style.display='none'"
+        />
+      </div>
+    )}
+    <div class="flex-1 min-w-0">
+      <h3
+        class:list={[
+          "font-medium text-gray-900 group-hover:text-black leading-snug text-sm line-clamp-2",
+          !news.image_url ? "pt-1" : ""
+        ]}
+      >
+        {cleanTitle}
+      </h3>
+    </div>
   </article>
 </a>

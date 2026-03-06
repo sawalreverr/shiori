@@ -1,9 +1,9 @@
 ---
-import type { SourceGroup } from "../types";
+import type { SourceGroupResponse } from "../types";
 import SourceColumn from "./SourceColumn.astro";
 
 interface Props {
-  groups: SourceGroup[];
+  groups: SourceGroupResponse[];
 }
 
 const { groups } = Astro.props;
@@ -18,12 +18,10 @@ const validGroups = groups.filter(
   <div
     class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
   >
-    {
-      validGroups.map((group) => (
-        <div class="mb-2">
-          <SourceColumn group={group} />
-        </div>
-      ))
-    }
+    {validGroups.map((group) => (
+      <div class="mb-2">
+        <SourceColumn group={group} />
+      </div>
+    ))}
   </div>
 </div>

@@ -1,16 +1,19 @@
-export interface NewsItem {
+export interface MarketNewsResponse {
   title: string;
   url: string;
-  category: string;
+  image_url?: string;
   published_at?: string;
 }
 
-export interface SourceGroup {
+export interface SourceGroupResponse {
   id: string;
-  news: NewsItem[];
+  news: MarketNewsResponse[];
 }
 
-export interface ApiResponse {
+export interface MarketResponse {
   status: string;
-  items: SourceGroup[];
+  source_count: number;
+  total_news: number;
+  last_scraped_at?: string;
+  items: SourceGroupResponse[];
 }
