@@ -179,7 +179,7 @@
     </div>
   {:else}
     <div class="w-full max-w-400 mx-auto px-4 py-8">
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {#each validGroups as group, i (group.id)}
           {@const sourceConfig = getSourceConfig(group.id)}
           <article class="flex flex-col bg-white border border-gray-200 shadow-[2px_2px_0px_rgba(0,0,0,0.05)] hover:shadow-[4px_4px_0px_rgba(0,0,0,0.1)] transition-shadow duration-300" style="animation-delay: {i * 30}ms">
