@@ -38,7 +38,6 @@ func (s *KatadataScraper) Scrape(ctx context.Context) ([]*model.News, error) {
 	var news []*model.News
 	seen := make(map[string]bool)
 
-	// headline slider news
 	doc.Find(".container article").Each(func(i int, sel *goquery.Selection) {
 		aEl := sel.Find("a")
 		linkHref, exists := aEl.Attr("href")
@@ -52,6 +51,9 @@ func (s *KatadataScraper) Scrape(ctx context.Context) ([]*model.News, error) {
 		seen[linkHref] = true
 
 		title := strings.TrimSpace(sel.Find("h2").Text())
+		if title == "" {
+			title = strings.TrimSpace(sel.Find("h3").Text())
+		}
 
 		body, err := s.client.Fetch(ctx, linkHref)
 		if err != nil {
@@ -67,74 +69,6 @@ func (s *KatadataScraper) Scrape(ctx context.Context) ([]*model.News, error) {
 
 		published_at := doc.Find(".detail-date").Text()
 		published, _ := s.parser.ParseTimeFormat(published_at, "2 January 2006 15:04")
-
-		news = append(news, &model.News{
-			Title:       title,
-			URL:         linkHref,
-			ImageURL:    imgLink,
-			Source:      s.Name(),
-			PublishedAt: published,
-		})
-	})
-
-	// headline items news
-	doc.Find(".headline-item").Each(func(i int, sel *goquery.Selection) {
-		aEl := sel.Find("a")
-		linkHref, exists := aEl.Attr("href")
-		if !exists {
-			return
-		}
-
-		if _, ok := seen[linkHref]; ok {
-			return
-		}
-		seen[linkHref] = true
-
-		title := strings.TrimSpace(sel.Find("h2").Text())
-
-		body, err := s.client.Fetch(ctx, linkHref)
-		if err != nil {
-			return
-		}
-
-		doc, err := goquery.NewDocumentFromReader(strings.NewReader(string(body)))
-		if err != nil {
-			return
-		}
-
-		imgLink, _ := doc.Find(".detail-image img.img-fullwidth").Attr("src")
-
-		published_at := doc.Find(".detail-date").Text()
-		published, _ := s.parser.ParseTimeFormat(published_at, "2 January 2006 15:04")
-
-		news = append(news, &model.News{
-			Title:       title,
-			URL:         linkHref,
-			ImageURL:    imgLink,
-			Source:      s.Name(),
-			PublishedAt: published,
-		})
-	})
-
-	doc.Find("article.article.article--berita.d-flex").Each(func(i int, sel *goquery.Selection) {
-		aEl := sel.Find("a")
-		linkHref, exists := aEl.Attr("href")
-		if !exists {
-			return
-		}
-
-		if _, ok := seen[linkHref]; ok {
-			return
-		}
-		seen[linkHref] = true
-
-		title := strings.TrimSpace(sel.Find("h3").Text())
-
-		imgLink, _ := sel.Find(".content-image.scale img").Attr("data-src")
-
-		published_at := sel.Find(".article__date").Text() // • 6 Februari 2026, 15.27
-		published_at = strings.Split(published_at, "•")[1]
-		published, _ := s.parser.ParseTimeFormat(published_at, "2 January 2006 15.04")
 
 		news = append(news, &model.News{
 			Title:       title,

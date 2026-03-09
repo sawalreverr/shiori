@@ -148,7 +148,7 @@ func extractURLImg(style string) string {
 	re := regexp.MustCompile(`background-image:\s*url\((.*?)\);`)
 	match := re.FindStringSubmatch(style)
 	if len(match) > 1 {
-		return match[1]
+		return strings.Replace(match[1], "'", "", 2)
 	}
 
 	return ""
