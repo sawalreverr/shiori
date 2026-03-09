@@ -20,18 +20,37 @@ export interface MarketData {
   items: SourceGroup[];
 }
 
+interface StoreState {
+  data: MarketData | null;
+  fetching: boolean;
+  lastUpdated: Date | null;
+}
+
 function createNewsStore() {
-  const { subscribe, set, update } = writable<MarketData | null>(null);
+  const initialState: StoreState = {
+    data: null,
+    fetching: false,
+    lastUpdated: null
+  };
+  
+  const { subscribe, set, update } = writable<StoreState>(initialState);
   let pollInterval: ReturnType<typeof setInterval> | null = null;
 
   async function fetchNews() {
+    update(s => ({ ...s, fetching: true }));
+    
     try {
       const response = await fetch(API_NEWS);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
-      set(data);
+      update(s => ({ 
+        data, 
+        fetching: false, 
+        lastUpdated: new Date() 
+      }));
     } catch (err) {
       console.error('Fetch error:', err);
+      update(s => ({ ...s, fetching: false }));
     }
   }
 
