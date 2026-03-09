@@ -1,19 +1,6 @@
 ---
-import FeedGrid from "../components/FeedGrid.astro";
-import type { MarketResponse } from "../types";
+import NewsFeed from "../components/NewsFeed.svelte";
 import "../styles/global.css";
-
-let data: MarketResponse | null = null;
-let error = false;
-
-try {
-  const response = await fetch("http://localhost:8080/api/news");
-  if (!response.ok) throw new Error("Failed to fetch");
-  data = await response.json();
-} catch (e) {
-  console.error("Fetch error:", e);
-  error = true;
-}
 ---
 
 <html lang="en">
@@ -48,24 +35,7 @@ try {
     </header>
 
     <main class="min-h-[calc(100vh-100px)]">
-      {error && (
-        <div class="flex flex-col items-center justify-center py-20 text-gray-500">
-          <div class="text-6xl mb-4">⚡</div>
-          <div class="font-mono text-lg">Connection to server failed.</div>
-          <p class="text-sm mt-2 opacity-50">Is the backend running on port 8080?</p>
-        </div>
-      )}
-      {!error && data && (
-        <>
-          <div class="max-w-7xl mx-auto px-4 py-4">
-            <div class="flex flex-wrap gap-4 text-sm font-mono text-gray-500 border-b border-gray-200 pb-4 mb-6">
-              <span>sources: <strong>{data.source_count}</strong></span>
-              <span>news: <strong>{data.total_news}</strong></span>
-            </div>
-          </div>
-          <FeedGrid groups={data.items || []} />
-        </>
-      )}
+      <NewsFeed client:load />
     </main>
 
     <footer class="border-t border-gray-200 py-8 mt-12 bg-white">
@@ -73,7 +43,5 @@ try {
         SHIORI &copy; 2026
       </div>
     </footer>
-
-    <script type="module" src="/src/lib/news-poller.js"></script>
   </body>
 </html>
