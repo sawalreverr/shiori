@@ -6,14 +6,14 @@ import tailwindcss from "@tailwindcss/vite";
 
 // https://astro.build/config
 export default defineConfig({
-  integrations: [svelte()],
+    integrations: [svelte()],
 
-  vite: {
-    server: {
-      proxy: {
-        "/api": "http://localhost:8080",
-      },
+    vite: {
+        server: {
+            proxy: {
+                "/api": "http://localhost:8080",
+            },
+        },
+        plugins: [tailwindcss()],
     },
-    plugins: [tailwindcss()],
-  },
 });

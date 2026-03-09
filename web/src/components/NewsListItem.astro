@@ -18,7 +18,7 @@ const cleanTitle = news.title.replace(/<[^>]*>?/gm, "");
 >
   <article class="flex gap-3">
     {news.image_url && (
-      <div class="flex-shrink-0 w-16 h-16 overflow-hidden rounded-sm border border-gray-200 bg-gray-100">
+      <div class="shrink-0 w-16 h-16 overflow-hidden rounded-sm border border-gray-200 bg-gray-100">
         <img
           src={news.image_url}
           alt=""
